@@ -1,4 +1,5 @@
 from sys import ffi
+from extern_gguf import gguf_open, GGUFContext
 
 # Declare the return type struct, a pair of int32_t values
 # @register_passable("trivial")

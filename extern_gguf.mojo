@@ -1,3 +1,5 @@
+from collections.vector import InlinedFixedVector
+
 # /* Flags that can be used in different functions with the same meaning. */
 # #define GGUF_NONE           0           // No flags.
 # #define GGUF_OVERWRITE      (1<<0)      // Overwrite the destination object.
@@ -225,7 +227,7 @@ struct GGUFKey:
     var name: Pointer[Char]  # Key name
     var namelen: Int  # Length of the key name
     var type: UInt32  # Key type
-    var val: Pointer[AnyPointer]  # Key value
+    var val: DTypePointer[AnyType]  # Key value
 
 
 # /* Tensor representation in this library API. */
@@ -267,3 +269,84 @@ struct GGUFContext:
     var off: UInt64  # Offset of the next item to parse
     var data_off: UInt64  # Offset of tensor data section. This is only set when all the kv/tensor header entries are processed. Initially 0.
     var alignment: UInt64  # File data alignment. Default: 32 bytes.
+
+
+# /* Tensor representation in this library API. */
+# #define GGUF_TENSOR_MAX_DIM 8           // Future-proof: actual limit is 4.
+# typedef struct {
+#     const char *name;
+#     size_t namelen;
+#     uint32_t type;                      // Tensor type (enum gguf_tensor_type).
+#     uint32_t ndim;                      // Number of dimensions of the tensor.
+#     uint64_t dim[GGUF_TENSOR_MAX_DIM];  // Dimensions (Eg. [512, 1024, 1, 1]).
+#     uint64_t offset;                    // Offset from start of file.
+#     uint64_t bsize;                     // Total size in bytes.
+#     uint64_t num_weights;               // Total number of parameters.
+#     uint8_t *weights_data;              // Pointer to the mmaped file.
+# } gguf_tensor;
+
+
+alias GGUF_TENSOR_MAX_DIM = 8  # Future-proof: actual limit is 4.
+
+
+struct GGUFTensor:
+    var name: Pointer[Char]  # Tensor name
+    var namelen: Int  # Length of the tensor name
+    var type: UInt32  # Tensor type (enum gguf_tensor_type)
+    var ndim: UInt32  # Number of dimensions of the tensor
+    var dim: InlinedFixedVector[
+        UInt64, GGUF_TENSOR_MAX_DIM
+    ]  # Dimensions (Eg. [512, 1024, 1, 1])
+    var offset: UInt64  # Offset from start of file
+    var bsize: UInt64  # Total size in bytes
+    var num_weights: UInt64  # Total number of parameters
+    var weights_data: Pointer[UInt8]  # Pointer to the mmaped file
+
+
+# /* The context you get after opening a GGUF file with gguf_init(). */
+# typedef struct {
+#     int fd;
+#     uint8_t *data;  // Memory mapped data.
+#     uint64_t size;  // Total file size.
+#     struct gguf_header *header;     // GUFF file header info.
+#     uint32_t left_kv;               // Number of key-value pairs yet to read.
+#     uint32_t left_tensors;          // Number of tensors yet to read.
+#     uint64_t off;                   // Offset of the next item to parse.
+#     uint64_t data_off;              // Offset of tensor data section. This
+#                                     // is only set when all the kv/tensor header
+#                                     // entries are processed. Initially 0.
+#     uint64_t alignment;             // File data alignment. Default: 32 bytes.
+# } gguf_ctx;
+
+
+fn gguf_open(file: StringRef, flags: Int) -> Pointer[GGUFContext]:
+    let ctx_ptr: Pointer[GGUFContext] = external_call[
+        "_gguf_open", Pointer[GGUFContext]
+    ](file, flags)
+    return ctx_ptr
+
+
+# fn gguf_close(ctx: Pointer[GGUFContext]) -> Int:
+#     pass
+
+
+# fn gguf_read_header(ctx: Pointer[GGUFContext]) -> Int:
+#     pass
+
+
+# fn gguf_read_kv(ctx: Pointer[GGUFContext], kv: Pointer[GGUFKey]) -> Int:
+#     pass
+
+
+# fn gguf_read_tensor(ctx: Pointer[GGUFContext], tensor: Pointer[GGUFTensor]) -> Int:
+#     pass
+
+
+# fn gguf_read_tensor_data(ctx: Pointer[GGUFContext], tensor: Pointer[GGUFTensor]) -> Int:
+#     pass
+
+
+# fn gguf_read_tensor_data_at(
+#     ctx: Pointer[GGUFContext], tensor: Pointer[GGUFTensor], offset: UInt64, size: UInt64
+# ) -> Int:
+#     pass
