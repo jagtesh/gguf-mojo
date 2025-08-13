@@ -1,0 +1,19 @@
+# Build artifacts
+ggml/build/
+gguf-tools/gguf-tools
+
+# Mojo build outputs
+*.o
+main
+make
+
+# Temporary files
+.DS_Store
+*~
+*.swp
+*.swo
+
+# IDE files
+.vscode/
+.idea/
+*.iml
